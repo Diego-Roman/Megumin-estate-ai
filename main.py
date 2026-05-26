@@ -54,28 +54,28 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         return "\n".join(page.extract_text() or "" for page in pdf.pages)
 
 
-def query_openrouter(contract_text: str) -> dict:
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "HTTP-Referer": "http://localhost:8000",
-        "X-Title": "MeguminEstateAI",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"Extract data from this contract:\n\n{contract_text}"},
-        ],
-        "temperature": 0,
-    }
+OPENROUTER_HEADERS = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "HTTP-Referer": "http://localhost:8000",
+    "X-Title": "MeguminEstateAI",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Content-Type": "application/json",
+}
 
-    response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+
+def _call_openrouter(messages: list, temperature: float) -> str:
+    payload = {"model": MODEL, "messages": messages, "temperature": temperature}
+    response = requests.post(OPENROUTER_URL, headers=OPENROUTER_HEADERS, json=payload, timeout=30)
     response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"].strip()
 
-    raw_content = response.json()["choices"][0]["message"]["content"].strip()
-    return json.loads(raw_content)
+
+def query_openrouter(contract_text: str) -> dict:
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"Extract data from this contract:\n\n{contract_text}"},
+    ]
+    return json.loads(_call_openrouter(messages, temperature=0))
 
 
 @app.post("/upload-contract/")
@@ -126,37 +126,30 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
             )
         }
 
+    def field(value, fallback="No especificado"):
+        return value if value is not None else fallback
+
     contexto = "CONTRATOS REGISTRADOS EN EL SISTEMA:\n\n"
     for i, c in enumerate(contratos, start=1):
         contexto += (
             f"Contrato #{i} (ID: {c.id}):\n"
-            f"  - Precio de alquiler mensual: {c.precio_alquiler if c.precio_alquiler is not None else 'No especificado'}\n"
-            f"  - Penalización por retraso: {c.penalizacion_retraso if c.penalizacion_retraso is not None else 'No especificada'}\n"
-            f"  - Fecha de inicio: {c.fecha_inicio if c.fecha_inicio else 'No especificada'}\n"
-            f"  - Fecha de fin: {c.fecha_fin if c.fecha_fin else 'No especificada'}\n\n"
+            f"  - Propietario: {field(c.propietario)}\n"
+            f"  - Arrendatario: {field(c.arrendatario)}\n"
+            f"  - Dirección del inmueble: {field(c.direccion_inmueble)}\n"
+            f"  - Precio de alquiler mensual: {field(c.precio_alquiler)} {field(c.moneda, '')}\n"
+            f"  - Penalización por retraso: {field(c.penalizacion_retraso)}\n"
+            f"  - Fecha de inicio: {field(c.fecha_inicio)}\n"
+            f"  - Fecha de fin: {field(c.fecha_fin)}\n\n"
         )
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": MEGUMIN_SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": f"{contexto}\nPregunta del usuario: {request.mensaje}",
-            },
-        ],
-        "temperature": 0.7,
-    }
+    messages = [
+        {"role": "system", "content": MEGUMIN_SYSTEM_PROMPT},
+        {"role": "user", "content": f"{contexto}\nPregunta del usuario: {request.mensaje}"},
+    ]
 
     try:
-        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
+        respuesta = _call_openrouter(messages, temperature=0.7)
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Error al contactar OpenRouter: {str(e)}")
 
-    respuesta = response.json()["choices"][0]["message"]["content"].strip()
     return {"respuesta": respuesta}
