@@ -38,7 +38,7 @@ Si la información solicitada no está en los contratos, indícalo amablemente s
 
 
 class ChatRequest(BaseModel):
-    mensaje: str
+    user_message: str
 
 
 SYSTEM_PROMPT = """You are a real estate contract data extractor.
@@ -150,13 +150,13 @@ async def upload_contract(
     return JSONResponse(content={**extracted_data, "id": contrato.id})
 
 
-@app.post("/chat/")
+@app.post("/chat")
 def chat(request: ChatRequest, db: Session = Depends(get_db)):
     contratos = db.query(Contrato).all()
 
     if not contratos:
         return {
-            "respuesta": (
+            "response": (
                 "¡Hola! Soy Megumin, tu asistente inmobiliaria. "
                 "Aún no hay contratos registrados en el sistema. "
                 "Por favor, sube uno primero usando /upload-contract/."
@@ -181,7 +181,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
     messages = [
         {"role": "system", "content": MEGUMIN_SYSTEM_PROMPT},
-        {"role": "user", "content": f"{contexto}\nPregunta del usuario: {request.mensaje}"},
+        {"role": "user", "content": f"{contexto}\nPregunta del usuario: {request.user_message}"},
     ]
 
     try:
@@ -189,4 +189,4 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"Error al contactar OpenRouter: {str(e)}")
 
-    return {"respuesta": respuesta}
+    return {"response": respuesta}
