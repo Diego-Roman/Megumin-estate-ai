@@ -6,6 +6,7 @@ import pdfplumber
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -16,6 +17,13 @@ from database import engine, Base, get_db
 from models import Contrato
 
 app = FastAPI(title="megumin-estate-ai")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -76,6 +84,25 @@ def query_openrouter(contract_text: str) -> dict:
         {"role": "user", "content": f"Extract data from this contract:\n\n{contract_text}"},
     ]
     return json.loads(_call_openrouter(messages, temperature=0))
+
+
+@app.get("/contracts")
+def get_contracts(db: Session = Depends(get_db)):
+    contratos = db.query(Contrato).all()
+    return [
+        {
+            "id": c.id,
+            "propietario": c.propietario,
+            "arrendatario": c.arrendatario,
+            "direccion_inmueble": c.direccion_inmueble,
+            "precio_alquiler": c.precio_alquiler,
+            "penalizacion_retraso": c.penalizacion_retraso,
+            "fecha_inicio": c.fecha_inicio,
+            "fecha_fin": c.fecha_fin,
+            "moneda": c.moneda,
+        }
+        for c in contratos
+    ]
 
 
 @app.post("/upload-contract/")
