@@ -13,3 +13,4 @@ class Contrato(Base):
     arrendatario = Column(String, nullable=True)
     direccion_inmueble = Column(String, nullable=True)
     moneda = Column(String, nullable=True)
+    pdf_url = Column(String, nullable=True)

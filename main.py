@@ -1,6 +1,7 @@
 import io
 import json
 import os
+from typing import Optional
 
 import pdfplumber
 import requests
@@ -9,6 +10,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 load_dotenv()
@@ -27,6 +29,10 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+with engine.connect() as conn:
+    conn.execute(text("ALTER TABLE contratos ADD COLUMN IF NOT EXISTS pdf_url TEXT"))
+    conn.commit()
+
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "openai/gpt-4o-mini"
@@ -43,6 +49,10 @@ Cuando el usuario te pida redactar un contrato, anexo o documento legal, tu resp
 
 class ChatRequest(BaseModel):
     user_message: str
+
+
+class ArchivoUpdate(BaseModel):
+    pdf_url: Optional[str]
 
 
 SYSTEM_PROMPT = """You are a real estate contract data extractor.
@@ -104,9 +114,21 @@ def get_contracts(db: Session = Depends(get_db)):
             "fecha_inicio": c.fecha_inicio,
             "fecha_fin": c.fecha_fin,
             "moneda": c.moneda,
+            "pdf_url": c.pdf_url,
         }
         for c in contratos
     ]
+
+
+@app.patch("/contracts/{contract_id}/archivo")
+def update_contract_file(contract_id: int, body: ArchivoUpdate, db: Session = Depends(get_db)):
+    contrato = db.query(Contrato).filter(Contrato.id == contract_id).first()
+    if not contrato:
+        raise HTTPException(status_code=404, detail="Contrato no encontrado")
+    contrato.pdf_url = body.pdf_url
+    db.commit()
+    db.refresh(contrato)
+    return {"id": contrato.id, "pdf_url": contrato.pdf_url}
 
 
 @app.delete("/contracts/{contract_id}")
