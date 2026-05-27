@@ -180,30 +180,24 @@ async def upload_contract(
 def chat(request: ChatRequest, db: Session = Depends(get_db)):
     contratos = db.query(Contrato).all()
 
-    if not contratos:
-        return {
-            "response": (
-                "¡Hola! Soy Megumin, tu asistente inmobiliaria. "
-                "Aún no hay contratos registrados en el sistema. "
-                "Por favor, sube uno primero usando /upload-contract/."
-            )
-        }
-
     def field(value, fallback="No especificado"):
         return value if value is not None else fallback
 
-    contexto = "CONTRATOS REGISTRADOS EN EL SISTEMA:\n\n"
-    for i, c in enumerate(contratos, start=1):
-        contexto += (
-            f"Contrato #{i} (ID: {c.id}):\n"
-            f"  - Propietario: {field(c.propietario)}\n"
-            f"  - Arrendatario: {field(c.arrendatario)}\n"
-            f"  - Dirección del inmueble: {field(c.direccion_inmueble)}\n"
-            f"  - Precio de alquiler mensual: {field(c.precio_alquiler)} {field(c.moneda, '')}\n"
-            f"  - Penalización por retraso: {field(c.penalizacion_retraso)}\n"
-            f"  - Fecha de inicio: {field(c.fecha_inicio)}\n"
-            f"  - Fecha de fin: {field(c.fecha_fin)}\n\n"
-        )
+    if not contratos:
+        contexto = "Contratos actuales: Ninguno."
+    else:
+        contexto = "CONTRATOS REGISTRADOS EN EL SISTEMA:\n\n"
+        for i, c in enumerate(contratos, start=1):
+            contexto += (
+                f"Contrato #{i} (ID: {c.id}):\n"
+                f"  - Propietario: {field(c.propietario)}\n"
+                f"  - Arrendatario: {field(c.arrendatario)}\n"
+                f"  - Dirección del inmueble: {field(c.direccion_inmueble)}\n"
+                f"  - Precio de alquiler mensual: {field(c.precio_alquiler)} {field(c.moneda, '')}\n"
+                f"  - Penalización por retraso: {field(c.penalizacion_retraso)}\n"
+                f"  - Fecha de inicio: {field(c.fecha_inicio)}\n"
+                f"  - Fecha de fin: {field(c.fecha_fin)}\n\n"
+            )
 
     messages = [
         {"role": "system", "content": MEGUMIN_SYSTEM_PROMPT},
