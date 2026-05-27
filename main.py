@@ -105,6 +105,16 @@ def get_contracts(db: Session = Depends(get_db)):
     ]
 
 
+@app.delete("/contracts/{contract_id}")
+def delete_contract(contract_id: int, db: Session = Depends(get_db)):
+    contrato = db.query(Contrato).filter(Contrato.id == contract_id).first()
+    if not contrato:
+        raise HTTPException(status_code=404, detail="Contrato no encontrado")
+    db.delete(contrato)
+    db.commit()
+    return {"message": "Contrato eliminado exitosamente"}
+
+
 @app.post("/upload-contract/")
 async def upload_contract(
     file: UploadFile = File(...),
