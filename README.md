@@ -25,14 +25,6 @@ Este repositorio contiene únicamente la **API (Backend)** construida con FastAP
 
 ---
 
-### 🎥 Demostración del Sistema
-> **Nota de Seguridad:** Para proteger las cuotas y claves de la API de Inteligencia Artificial (Open Router), el entorno de producción en Vercel se mantiene privado. 
-> 
-> Puedes ver el flujo completo de la plataforma, desde la carga del PDF hasta la extracción de datos, en el siguiente video:
-> 
-> **[👉 Ver Video Demostrativo de Megumin Estate AI](#)** *(Nota para Claude: deja el link con un # por ahora)*
-
----
 
 ## 📌 Descripción General
 
