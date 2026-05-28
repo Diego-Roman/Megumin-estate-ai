@@ -18,6 +18,22 @@ Extracción automatizada de datos contractuales, gestión de portafolio y asiste
 
 ---
 
+### 🌐 Arquitectura Separada (Microservicios)
+Este repositorio contiene únicamente la **API (Backend)** construida con FastAPI. 
+
+🖥️ **[Haz clic aquí para ver el repositorio del Frontend en Next.js](https://github.com/Diego-Roman/Megumin-estate-ai-frontend)**
+
+---
+
+### 🎥 Demostración del Sistema
+> **Nota de Seguridad:** Para proteger las cuotas y claves de la API de Inteligencia Artificial (Open Router), el entorno de producción en Vercel se mantiene privado. 
+> 
+> Puedes ver el flujo completo de la plataforma, desde la carga del PDF hasta la extracción de datos, en el siguiente video:
+> 
+> **[👉 Ver Video Demostrativo de Megumin Estate AI](#)** *(Nota para Claude: deja el link con un # por ahora)*
+
+---
+
 ## 📌 Descripción General
 
 **Megumin Estate AI** es el backend de una plataforma SaaS PropTech que automatiza la extracción y gestión de datos críticos de contratos inmobiliarios mediante inteligencia artificial.
